@@ -42,8 +42,17 @@ class SiteContentEntry(models.Model):
         return f'{self.key} [{self.language}]'
 
 
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
+
+
+@receiver(post_save, sender=SiteContentEntry)
+@receiver(post_delete, sender=SiteContentEntry)
+def invalidate_public_content_cache(sender, instance, **kwargs):
+    from django.core.cache import cache
+    from bali_rent.public_data import PUBLIC_LANGUAGES
+
+    cache.delete_many([f"public_site_bootstrap_{item['api_code']}" for item in PUBLIC_LANGUAGES])
 
 
 @receiver(post_delete, sender=SiteContentEntry)
